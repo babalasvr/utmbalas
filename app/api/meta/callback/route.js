@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 const fetch = require('node-fetch');
 const db = require('@/lib/db');

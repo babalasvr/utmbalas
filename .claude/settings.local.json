@@ -14,7 +14,8 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(cmd /c \"del C:\\\\Users\\\\Balas\\\\Desktop\\\\utmbalas\\\\public\\\\index.html\")",
       "Bash(cmd /c \"taskkill /F /PID 24940\")",
-      "Bash(powershell -Command \"Stop-Process -Id 24940 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 24940 -Force\")",
+      "Bash(xargs ls:*)"
     ]
   }
 }
