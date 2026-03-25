@@ -51,13 +51,35 @@ export async function GET(request) {
     GROUP BY campaign_id
   `).all(metaDateLabel);
 
-  const metaMap = {};
+  // Mapeia por campaign_id E por nome para match flexível
+  const metaById = {};
+  const metaByName = {};
   for (const m of gastosMeta) {
-    metaMap[m.campaign_name] = m;
+    if (m.campaign_id) metaById[m.campaign_id] = m;
+    metaByName[m.campaign_name?.toLowerCase()] = m;
+  }
+
+  // Extrai o ID do Meta embutido no utm_campaign (formato: "nome+campanha|ID")
+  function extractCampaignId(utm) {
+    if (!utm) return null;
+    const parts = utm.split('|');
+    return parts.length > 1 ? parts[parts.length - 1].trim() : null;
+  }
+
+  // Nome legível: remove o |ID do final e troca + por espaço
+  function cleanCampaignName(utm, metaName) {
+    if (metaName) return metaName;
+    if (!utm) return '(sem campanha)';
+    return utm.split('|')[0].replace(/\+/g, ' ').trim();
   }
 
   const campaigns = vendasPorCampanha.map(v => {
-    const meta = metaMap[v.utm_campaign] || {};
+    const embeddedId = extractCampaignId(v.utm_campaign);
+    // 1º tenta pelo ID embutido no UTM, 2º pelo nome exato, 3º vazio
+    const meta = (embeddedId && metaById[embeddedId])
+              || metaByName[v.utm_campaign?.toLowerCase()]
+              || {};
+
     const faturamento = parseFloat(v.faturamento) || 0;
     const gasto = parseFloat(meta.spend) || 0;
     const lucro = faturamento - gasto;
@@ -65,8 +87,8 @@ export async function GET(request) {
     const roas = gasto > 0 ? faturamento / gasto : 0;
 
     return {
-      campaign_id: meta.campaign_id || null,
-      campaign_name: v.utm_campaign || '(sem campanha)',
+      campaign_id: meta.campaign_id || embeddedId || null,
+      campaign_name: cleanCampaignName(v.utm_campaign, meta.campaign_name),
       vendas: v.vendas,
       faturamento,
       gasto,
@@ -80,8 +102,9 @@ export async function GET(request) {
     };
   });
 
+  // Adiciona campanhas do Meta que não tiveram nenhuma venda
   for (const m of gastosMeta) {
-    const jaExiste = campaigns.find(c => c.campaign_name === m.campaign_name);
+    const jaExiste = campaigns.find(c => c.campaign_id === m.campaign_id);
     if (!jaExiste) {
       campaigns.push({
         campaign_id: m.campaign_id,
