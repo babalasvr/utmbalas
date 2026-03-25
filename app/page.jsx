@@ -133,7 +133,7 @@ export default function Dashboard() {
   const lucroColor = !metrics ? 'default' : metrics.lucro >= 0 ? 'green' : 'red';
 
   return (
-    <div className="min-h-screen bg-[#0f1117]">
+    <div className="min-h-screen bg-[#07090e]">
       <Header
         activePage={activePage}
         onNavigate={setActivePage}
@@ -146,53 +146,62 @@ export default function Dashboard() {
         <>
           <PeriodSelector period={period} onChange={handlePeriodChange} lastUpdated={lastUpdated} />
 
-          <div className="px-6 py-5 flex flex-col gap-5">
-            {/* KPI Row */}
-            <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <div className="px-6 py-4 flex flex-col gap-4 max-w-[1600px] mx-auto">
+
+            {/* KPI Grid */}
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}>
               <KPICard
                 label="Faturamento"
+                icon="faturamento"
                 value={metrics ? fmt(metrics.faturamento) : '—'}
-                sub={metrics ? `${fmtNum(metrics.vendas)} vendas aprovadas` : '—'}
-                color="default"
+                sub={metrics ? `${fmtNum(metrics.vendas)} vendas aprovadas` : 'Aguardando dados'}
+                color="accent"
               />
               <KPICard
                 label="Valor Gasto"
+                icon="gasto"
                 value={metrics ? fmt(metrics.gasto) : '—'}
-                sub={metrics?.meta_conectado ? 'Meta Ads conectado' : 'Meta nao conectado'}
+                sub={metrics?.meta_conectado ? 'Meta Ads conectado' : 'Meta não conectado'}
                 color="red"
               />
               <KPICard
                 label="Lucro"
+                icon="lucro"
                 value={metrics ? fmt(metrics.lucro) : '—'}
                 sub={metrics ? `Margem: ${fmtPct(metrics.margem)}` : '—'}
                 color={lucroColor}
               />
               <KPICard
                 label="ROI"
+                icon="roi"
                 value={metrics ? fmtX(metrics.roi) : '—'}
                 sub="Retorno sobre investimento"
                 color="yellow"
               />
               <KPICard
                 label="CPA"
+                icon="cpa"
                 value={metrics ? fmt(metrics.cpa) : '—'}
-                sub="Custo por aquisicao"
+                sub="Custo por aquisição"
                 color="blue"
               />
               <KPICard
                 label="ARPU"
+                icon="arpu"
                 value={metrics ? fmt(metrics.arpu) : '—'}
                 sub="Receita por venda"
                 color="default"
               />
               <KPICard
                 label="Pendentes"
+                icon="pendentes"
                 value={metrics ? fmt(metrics.pendentes) : '—'}
                 sub="Aguardando pagamento"
-                color="default"
+                color="yellow"
               />
               <KPICard
                 label="Reembolsos"
+                icon="reembolsos"
                 value={metrics ? fmt(metrics.reembolsadas) : '—'}
                 sub="Total devolvido"
                 color="purple"
@@ -202,24 +211,25 @@ export default function Dashboard() {
             {/* Tabs */}
             <TabsPanel tabs={TABS} activeTab={activeTab} onChange={setActiveTab}>
 
-              {/* Tab: Visao Geral */}
+              {/* Tab: Visão Geral */}
               {activeTab === 'visao-geral' && (
-                <div className="flex flex-col gap-3.5">
-                  <div className="grid grid-cols-2 gap-3.5">
+                <div className="flex flex-col gap-4">
+
+                  <div className="grid grid-cols-2 gap-4">
                     <DonutChart
                       title="Vendas por Forma de Pagamento"
                       labels={pagamentoLabels}
                       data={pagamentoData}
                     />
                     <ApprovalRings
-                      title="Taxa de Aprovacao por Metodo"
+                      title="Taxa de Aprovação por Método"
                       porPagamento={metrics?.por_pagamento || []}
                     />
                   </div>
 
-                  <div className="grid gap-3.5" style={{ gridTemplateColumns: '2fr 1fr' }}>
+                  <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
                     <FunnelChart
-                      title="Funil de Conversao (Meta Ads)"
+                      title="Funil de Conversão (Meta Ads)"
                       data={metrics?.funil}
                     />
                     <ProgressList
@@ -228,52 +238,59 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  {/* Produtos table */}
-                  <div className="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-4">
-                    <div className="text-[13px] font-semibold text-[#8892a4] uppercase tracking-[0.6px] mb-4">
-                      Vendas por Produto
+                  {/* Produtos */}
+                  <div className="bg-[#0c0f18] border border-[#182030] rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-[#182030] flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.9px] text-[#5c6e8a]">
+                        Vendas por Produto
+                      </span>
+                      {produtoItems.length > 0 && (
+                        <span className="text-[11px] text-[#5c6e8a]">{produtoItems.length} produtos</span>
+                      )}
                     </div>
                     {produtoItems.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-[#8892a4] gap-2">
-                        <span className="text-2xl">&#x1F4E6;</span>
-                        <span className="text-sm">Sem dados</span>
+                      <div className="flex flex-col items-center justify-center py-10 text-[#5c6e8a] gap-2">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" opacity="0.4">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                        <span className="text-[12px]">Sem dados</span>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-[13px] border-collapse">
-                          <thead>
-                            <tr>
-                              {['Produto', 'Vendas', 'Faturamento', '% do Total'].map(h => (
-                                <th key={h} className="text-left px-3 py-2 text-[#8892a4] font-semibold uppercase text-[11px] tracking-[0.5px] border-b border-[#2a2d3e]">
-                                  {h}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#2a2d3e]">
-                            {produtoItems.map((p, idx) => (
-                              <tr key={idx} className="hover:bg-[#6366f1]/5 transition-colors">
-                                <td className="px-3 py-2.5 text-[#e2e8f0]">{p.label}</td>
-                                <td className="px-3 py-2.5">{p.vendas}</td>
-                                <td className="px-3 py-2.5">{fmt(p.value)}</td>
-                                <td className="px-3 py-2.5">
-                                  {totalFaturamento > 0
-                                    ? fmtPct((p.value / totalFaturamento) * 100)
-                                    : '—'}
-                                </td>
-                              </tr>
+                      <table className="w-full text-[12px]">
+                        <thead>
+                          <tr className="border-b border-[#182030]">
+                            {['Produto', 'Vendas', 'Faturamento', '% do Total'].map(h => (
+                              <th key={h} className="text-left px-5 py-3 text-[11px] font-bold uppercase tracking-[0.7px] text-[#5c6e8a]">
+                                {h}
+                              </th>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {produtoItems.map((p, idx) => (
+                            <tr key={idx} className="border-b border-[#10141f] hover:bg-[#10141f] transition-colors">
+                              <td className="px-5 py-3 text-[#dde3f0] font-medium">{p.label}</td>
+                              <td className="px-5 py-3">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[rgba(99,102,241,0.12)] text-[#6366f1]">
+                                  {p.vendas}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 font-semibold text-[#dde3f0]">{fmt(p.value)}</td>
+                              <td className="px-5 py-3 text-[#8a95b0]">
+                                {totalFaturamento > 0 ? fmtPct((p.value / totalFaturamento) * 100) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Tab: Por Horario */}
+              {/* Tab: Por Horário */}
               {activeTab === 'por-horario' && (
-                <div className="grid grid-cols-2 gap-3.5 mt-1">
+                <div className="grid grid-cols-2 gap-4">
                   <BarChart
                     title="Receita por Hora (R$)"
                     labels={horaLabels}
@@ -289,11 +306,11 @@ export default function Dashboard() {
 
               {/* Tab: Campanhas */}
               {activeTab === 'campanhas' && (
-                <div className="mt-1">
+                <div>
                   {loadingCampaigns ? (
-                    <div className="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-8 flex items-center justify-center gap-3 text-[#8892a4]">
+                    <div className="bg-[#0c0f18] border border-[#182030] rounded-xl p-10 flex items-center justify-center gap-3 text-[#5c6e8a]">
                       <div className="spinner" />
-                      Carregando campanhas...
+                      <span className="text-[13px]">Carregando campanhas...</span>
                     </div>
                   ) : (
                     <CampaignsTable campaigns={campaigns} />

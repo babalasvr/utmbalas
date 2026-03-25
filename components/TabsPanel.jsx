@@ -3,18 +3,21 @@
 export default function TabsPanel({ tabs, activeTab, onChange, children }) {
   return (
     <div>
-      <div className="flex gap-1 border-b border-[#2a2d3e] mb-4">
+      <div className="flex gap-0 border-b border-[#182030] mb-5">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className={`px-4 py-2 border-b-2 text-[13px] font-medium transition-colors -mb-px ${
+            className={`relative px-5 py-2.5 text-[13px] font-medium transition-all duration-150 ${
               activeTab === tab.key
-                ? 'border-[#6366f1] text-[#6366f1]'
-                : 'border-transparent text-[#8892a4] hover:text-[#e2e8f0]'
+                ? 'text-[#dde3f0]'
+                : 'text-[#5c6e8a] hover:text-[#8a95b0]'
             }`}
           >
             {tab.label}
+            {activeTab === tab.key && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#6366f1] rounded-t-full" />
+            )}
           </button>
         ))}
       </div>
