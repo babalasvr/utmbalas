@@ -219,8 +219,8 @@ export default function Dashboard() {
 
                   <div className="grid gap-3.5" style={{ gridTemplateColumns: '2fr 1fr' }}>
                     <FunnelChart
-                      title="Funil de Conversao"
-                      campaigns={campaigns}
+                      title="Funil de Conversao (Meta Ads)"
+                      data={metrics?.funil}
                     />
                     <ProgressList
                       title="Vendas por Fonte (UTM)"

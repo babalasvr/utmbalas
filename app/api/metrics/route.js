@@ -79,6 +79,11 @@ export async function GET(request) {
     ORDER BY hora
   `).all(dateFrom);
 
+  const salesInitiated = db.prepare(`
+    SELECT COUNT(*) as count FROM events
+    WHERE status IN ('approved', 'pending') AND date(created_at) >= ?
+  `).get(dateFrom);
+
   let gasto = 0;
   const metaToken = getMetaToken();
   if (metaToken) {
@@ -87,9 +92,14 @@ export async function GET(request) {
                         : period === '30d' ? `30d_${todayLabel}`
                         : todayLabel;
     const spendRow = db.prepare(`
-      SELECT SUM(spend) as total FROM meta_spend_cache WHERE date = ?
+      SELECT SUM(spend) as total, SUM(clicks) as clicks,
+             SUM(page_views) as page_views, SUM(checkout_initiations) as checkout_initiations
+      FROM meta_spend_cache WHERE date = ?
     `).get(metaDateLabel);
     gasto = parseFloat(spendRow?.total) || 0;
+    var metaClicks = parseInt(spendRow?.clicks) || 0;
+    var metaPageViews = parseInt(spendRow?.page_views) || 0;
+    var metaCheckouts = parseInt(spendRow?.checkout_initiations) || 0;
   }
 
   const faturamento = parseFloat(approved?.total) || 0;
@@ -117,5 +127,12 @@ export async function GET(request) {
     por_hora: porHora,
     meta_conectado: !!metaToken,
     period,
+    funil: {
+      clicks:          metaClicks        ?? 0,
+      pageViews:       metaPageViews     ?? 0,
+      checkouts:       metaCheckouts     ?? 0,
+      salesInitiated:  parseInt(salesInitiated?.count) || 0,
+      salesApproved:   vendas,
+    },
   });
 }
