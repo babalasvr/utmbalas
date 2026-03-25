@@ -82,10 +82,13 @@ export async function GET(request) {
   let gasto = 0;
   const metaToken = getMetaToken();
   if (metaToken) {
+    const todayLabel = toSPDate(new Date());
+    const metaDateLabel = period === '7d'  ? `7d_${todayLabel}`
+                        : period === '30d' ? `30d_${todayLabel}`
+                        : todayLabel;
     const spendRow = db.prepare(`
-      SELECT SUM(spend) as total FROM meta_spend_cache
-      WHERE date >= ?
-    `).get(dateFrom);
+      SELECT SUM(spend) as total FROM meta_spend_cache WHERE date = ?
+    `).get(metaDateLabel);
     gasto = parseFloat(spendRow?.total) || 0;
   }
 
