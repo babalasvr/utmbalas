@@ -22,8 +22,9 @@ export default function FunnelChart({ campaigns, title }) {
           </div>
         )}
         <div className="flex flex-col items-center justify-center py-10 text-[#8892a4] gap-2">
-          <span className="text-3xl">&#x1F4C9;</span>
-          <span className="text-sm">Conecte o Meta Ads para ver o funil</span>
+          <span className="text-3xl">📊</span>
+          <span className="text-sm">Sem dados de impressoes no periodo</span>
+          <span className="text-[11px] text-[#555e70]">As campanhas precisam ter impressoes registradas no Meta Ads</span>
         </div>
       </div>
     );
