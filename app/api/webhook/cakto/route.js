@@ -25,6 +25,11 @@ export async function POST(request) {
 
   const d = body.data || {};
   const product = d.product || {};
+  const commissions = d.commissions || [];
+
+  // Pega o valor líquido do produtor (totalAmount da commission)
+  const producerCommission = commissions.find(c => c.type === 'producer');
+  const value = parseFloat(producerCommission?.totalAmount) || parseFloat(d.amount) || parseFloat(d.baseAmount) || 0;
 
   let status = 'approved';
   if (event === 'purchase_refunded') status = 'refunded';
@@ -37,7 +42,7 @@ export async function POST(request) {
     'cakto',
     event,
     d.id || d.refId || null,
-    parseFloat(d.amount) || parseFloat(d.baseAmount) || 0,
+    value,
     d.paymentMethod || d.payment_method || null,
     product.name || null,
     d.utm_campaign || null,
