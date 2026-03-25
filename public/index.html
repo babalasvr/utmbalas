@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UTMBalas</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card2: #1e2130;
+    --border: #2a2d3e;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --accent: #6366f1;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ─── Header ─────────────────── */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--card); position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; cursor: pointer; }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .meta-badge { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid var(--border); background: var(--card2); color: var(--muted); transition: all .2s; }
+  .meta-badge.connected { border-color: var(--green); color: var(--green); }
+  .meta-badge:hover { border-color: var(--accent); color: var(--accent); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .refresh-info { font-size: 11px; color: var(--muted); }
+  .nav-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s; }
+  .nav-btn:hover, .nav-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,.08); }
+
+  /* ─── Page views ──────────────── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── Integrations page ───────── */
+  .int-layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; min-height: calc(100vh - 57px); }
+  .int-sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 20px 0; }
+  .int-sidebar-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 0 20px 10px; }
+  .int-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); transition: all .15s; border-left: 2px solid transparent; }
+  .int-sidebar-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
+  .int-sidebar-item.active { color: var(--accent); background: rgba(99,102,241,.08); border-left-color: var(--accent); }
+  .int-sidebar-item .int-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: var(--card2); }
+  .int-sidebar-sep { height: 1px; background: var(--border); margin: 12px 20px; }
+  .int-body { padding: 28px 32px; overflow-y: auto; }
+  .int-panel { display: none; }
+  .int-panel.active { display: block; }
+  .int-section-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .int-section-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .int-status-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; }
+  .int-status-left { display: flex; align-items: center; gap: 12px; }
+  .int-platform-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--card); }
+  .int-platform-name { font-weight: 600; font-size: 14px; }
+  .int-platform-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .badge-connected { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-disconnected { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(136,146,164,.1); color: var(--muted); }
+
+  /* ─── Form fields ─────────────── */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+  .form-input { width: 100%; padding: 10px 14px; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--muted); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .btn { padding: 9px 20px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5254cc; }
+  .btn-danger { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+  .btn-danger:hover { background: rgba(239,68,68,.25); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .save-msg { font-size: 12px; color: var(--green); display: none; }
+
+  /* ─── Webhook URL box ─────────── */
+  .webhook-box { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .webhook-box-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .webhook-box-icon { font-size: 20px; }
+  .webhook-box-name { font-weight: 600; font-size: 14px; }
+  .webhook-box-events { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .webhook-url-row { display: flex; align-items: center; gap: 8px; }
+  .webhook-url-input { flex: 1; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 12px; font-family: monospace; outline: none; cursor: text; }
+  .copy-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  /* ─── Period selector ─────────── */
+  .period-bar { display: flex; align-items: center; gap: 8px; padding: 16px 24px 0; }
+  .period-btn { padding: 6px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s; }
+  .period-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .period-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+  .last-updated { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+  /* ─── Main layout ─────────────── */
+  .main { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ─── KPI Row ─────────────────── */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: border-color .2s; }
+  .kpi-card:hover { border-color: var(--accent); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+  .kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -1px; }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.purple .kpi-value { color: var(--purple); }
+
+  /* ─── Charts grid ─────────────── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .charts-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .charts-grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 16px; }
+
+  /* ─── Tabs ────────────────────── */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab { padding: 8px 16px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ─── Approval rings ─────────── */
+  .rings-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+  .ring-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ring-label { font-size: 11px; color: var(--muted); text-align: center; max-width: 70px; }
+  .ring-pct { font-size: 13px; font-weight: 700; }
+
+  /* ─── Table ───────────────────── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; font-size: 11px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(99,102,241,.06); }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge.green { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge.red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge.yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .num-green { color: var(--green); font-weight: 600; }
+  .num-red { color: var(--red); font-weight: 600; }
+  .num-muted { color: var(--muted); }
+
+  /* ─── Progress bar ────────────── */
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .progress-label { min-width: 120px; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .progress-bar-wrap { flex: 1; background: var(--card2); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 4px; background: var(--accent); transition: width .4s ease; }
+  .progress-val { min-width: 70px; text-align: right; font-size: 12px; font-weight: 600; }
+
+  /* ─── Funnel ──────────────────── */
+  .funnel { display: flex; flex-direction: column; gap: 8px; }
+  .funnel-step { position: relative; }
+  .funnel-bar-bg { background: var(--card2); border-radius: 6px; height: 36px; overflow: hidden; }
+  .funnel-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; font-weight: 600; color: #fff; transition: width .5s ease; }
+  .funnel-info { display: flex; justify-content: space-between; margin-top: 4px; }
+  .funnel-name { font-size: 11px; color: var(--muted); }
+  .funnel-value { font-size: 11px; font-weight: 600; }
+
+  /* ─── Toggle switch ───────────── */
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border); border-radius: 20px; transition: .2s; }
+  .toggle-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  input:checked + .toggle-slider { background: var(--accent); }
+  input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+  /* ─── Empty state ────────────── */
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--muted); gap: 8px; }
+  .empty-icon { font-size: 32px; }
+
+  /* ─── Spinner ────────────────── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+
+  canvas { max-height: 220px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo" onclick="showPage('dashboard')">UTM<span>Balas</span></div>
+  <div class="header-right">
+    <button class="nav-btn" id="navDashboard" onclick="showPage('dashboard')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" id="navIntegracoes" onclick="showPage('integracoes')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Integrações
+    </button>
+    <span class="refresh-info" id="refreshInfo">Atualiza a cada 30s</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE: DASHBOARD -->
+<div class="page active" id="pageDashboard">
+
+<!-- Period selector -->
+<div class="period-bar">
+  <button class="period-btn active" data-period="hoje" onclick="setPeriod('hoje')">Hoje</button>
+  <button class="period-btn" data-period="7d" onclick="setPeriod('7d')">7 dias</button>
+  <button class="period-btn" data-period="30d" onclick="setPeriod('30d')">30 dias</button>
+  <span class="last-updated" id="lastUpdated">—</span>
+</div>
+
+<!-- Main content -->
+<div class="main">
+
+  <!-- KPI Row -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card"><div class="kpi-label">Faturamento</div><div class="kpi-value" id="kFaturamento">—</div><div class="kpi-sub" id="kVendas">—</div></div>
+    <div class="kpi-card red"><div class="kpi-label">Valor Gasto</div><div class="kpi-value" id="kGasto">—</div><div class="kpi-sub" id="kMetaStatus">—</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Lucro</div><div class="kpi-value" id="kLucro">—</div><div class="kpi-sub" id="kMargem">—</div></div>
+    <div class="kpi-card yellow"><div class="kpi-label">ROI</div><div class="kpi-value" id="kRoi">—</div><div class="kpi-sub">Retorno sobre investimento</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">CPA</div><div class="kpi-value" id="kCpa">—</div><div class="kpi-sub">Custo por aquisição</div></div>
+    <div class="kpi-card"><div class="kpi-label">ARPU</div><div class="kpi-value" id="kArpu">—</div><div class="kpi-sub">Receita por venda</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kPendentes">—</div><div class="kpi-sub">Aguardando pagamento</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Reembolsos</div><div class="kpi-value" id="kReembolsos">—</div><div class="kpi-sub">Total devolvido</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('visao-geral')">Visão Geral</button>
+      <button class="tab" onclick="switchTab('por-horario')">Por Horário</button>
+      <button class="tab" onclick="switchTab('campanhas')">Campanhas</button>
+    </div>
+
+    <!-- Tab: Visão Geral -->
+    <div class="tab-content active" id="tab-visao-geral">
+      <div class="charts-grid">
+        <!-- Pagamentos donut -->
+        <div class="card">
+          <div class="card-title">Vendas por Forma de Pagamento</div>
+          <canvas id="chartPagamento"></canvas>
+        </div>
+        <!-- Aprovação por método -->
+        <div class="card">
+          <div class="card-title">Taxa de Aprovação por Método</div>
+          <div class="rings-grid" id="ringsGrid">
+            <div class="empty"><span class="empty-icon">📊</span><span>Sem dados</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid-wide" style="margin-top:14px">
+        <!-- Funil Meta Ads -->
+        <div class="card">
+          <div class="card-title">Funil de Conversão</div>
+          <div class="funnel" id="funnelEl"></div>
+        </div>
+        <!-- Vendas por fonte -->
+        <div class="card">
+          <div class="card-title">Vendas por Fonte (UTM)</div>
+          <div id="fonteList"></div>
+        </div>
+      </div>
+
+      <!-- Vendas por produto -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">Vendas por Produto</div>
+        <div class="table-wrap">
+          <table id="produtoTable">
+            <thead><tr><th>Produto</th><th>Vendas</th><th>Faturamento</th><th>% do Total</th></tr></thead>
+            <tbody id="produtoBody"><tr><td colspan="4"><div class="empty"><span class="empty-icon">📦</span><span>Sem dados</span></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Por Horário -->
+    <div class="tab-content" id="tab-por-horario">
+      <div class="charts-grid" style="margin-top:4px">
+        <div class="card">
+          <div class="card-title">Receita por Hora (R$)</div>
+          <canvas id="chartHoraBar"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Acumulado ao Longo do Dia</div>
+          <canvas id="chartHoraLine"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Campanhas -->
+    <div class="tab-content" id="tab-campanhas">
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">Performance por Campanha</div>
+        <div class="table-wrap">
+          <table id="campTable">
+            <thead>
+              <tr>
+                <th>Ativo</th>
+                <th>Campanha</th>
+                <th>Vendas</th>
+                <th>Faturamento</th>
+                <th>Gasto</th>
+                <th>Lucro</th>
+                <th>CPA</th>
+                <th>ROAS</th>
+                <th>CPC</th>
+                <th>CPM</th>
+                <th>Cliques</th>
+                <th>Impressões</th>
+              </tr>
+            </thead>
+            <tbody id="campBody"><tr><td colspan="12"><div class="empty"><span class="spinner"></span></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+</div><!-- /pageDashboard -->
+
+<!-- ═══════════════════════════════════════════════════ PAGE: INTEGRAÇÕES -->
+<div class="page" id="pageIntegracoes">
+  <div class="int-layout">
+
+    <!-- Sidebar -->
+    <div class="int-sidebar">
+      <div class="int-sidebar-title">Configurações</div>
+      <div class="int-sidebar-item active" onclick="showIntPanel('perfil')" id="isp-perfil">
+        <span class="int-icon">👤</span> Perfil
+      </div>
+      <div class="int-sidebar-item" onclick="showIntPanel('webhooks')" id="isp-webhooks">
+        <span class="int-icon">🔗</span> Webhooks
+      </div>
+      <div class="int-sidebar-sep"></div>
+      <div class="int-sidebar-title">Plataformas</div>
+      <div class="int-sidebar-item" onclick="showIntPanel('meta')" id="isp-meta">
+        <span class="int-icon">📘</span> Meta Ads
+      </div>
+      <div class="int-sidebar-item" onclick="showIntPanel('cakto')" id="isp-cakto">
+        <span class="int-icon">🛒</span> Cakto
+      </div>
+      <div class="int-sidebar-item" onclick="showIntPanel('woovi')" id="isp-woovi">
+        <span class="int-icon">💸</span> Woovi
+      </div>
+      <div class="int-sidebar-item" onclick="showIntPanel('stripe')" id="isp-stripe">
+        <span class="int-icon">💳</span> Stripe
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="int-body">
+
+      <!-- PERFIL -->
+      <div class="int-panel active" id="intpanel-perfil">
+        <div class="int-section-title">Perfil</div>
+        <div class="int-section-desc">Informações da sua conta e negócio.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input class="form-input" id="pf-name" type="text" placeholder="Seu nome" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input class="form-input" id="pf-email" type="email" placeholder="seu@email.com" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome do negócio</label>
+          <input class="form-input" id="pf-business" type="text" placeholder="Minha Empresa Ltda" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL base do servidor</label>
+          <input class="form-input" id="pf-baseurl" type="text" placeholder="https://seudominio.com" />
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Usada para gerar as URLs dos webhooks e o callback OAuth do Meta.</div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="saveProfile()">Salvar</button>
+          <span class="save-msg" id="saveProfileMsg">Salvo!</span>
+        </div>
+      </div>
+
+      <!-- WEBHOOKS -->
+      <div class="int-panel" id="intpanel-webhooks">
+        <div class="int-section-title">Token dos Webhooks</div>
+        <div class="int-section-desc">Use este token para autenticar os webhooks recebidos. Cole as URLs abaixo em cada plataforma.</div>
+
+        <div class="form-group" style="max-width:480px">
+          <label class="form-label">Token secreto</label>
+          <div style="display:flex;gap:8px">
+            <input class="form-input" id="wh-token" type="text" placeholder="meu_token_secreto" />
+            <button class="btn btn-ghost" onclick="generateToken()">Gerar</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Este token é enviado como <code style="background:var(--card2);padding:1px 5px;border-radius:3px">?token=</code> na URL do webhook.</div>
+        </div>
+        <div class="form-actions" style="margin-bottom:28px">
+          <button class="btn btn-primary" onclick="saveWebhookToken()">Salvar token</button>
+          <span class="save-msg" id="saveTokenMsg">Salvo!</span>
+        </div>
+
+        <div class="int-section-title" style="font-size:14px;margin-bottom:4px">URLs para copiar</div>
+        <div class="int-section-desc">Cole cada URL no painel da respectiva plataforma.</div>
+
+        <div class="webhook-box">
+          <div class="webhook-box-header">
+            <span class="webhook-box-icon">🛒</span>
+            <div>
+              <div class="webhook-box-name">Cakto</div>
+              <div class="webhook-box-events">purchase.approved · purchase.refunded · purchase.pending</div>
+            </div>
+          </div>
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-cakto" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-cakto', this)">Copiar</button>
+          </div>
+        </div>
+
+        <div class="webhook-box">
+          <div class="webhook-box-header">
+            <span class="webhook-box-icon">💸</span>
+            <div>
+              <div class="webhook-box-name">Woovi</div>
+              <div class="webhook-box-events">OPENPIX:CHARGE_COMPLETED</div>
+            </div>
+          </div>
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-woovi" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-woovi', this)">Copiar</button>
+          </div>
+        </div>
+
+        <div class="webhook-box">
+          <div class="webhook-box-header">
+            <span class="webhook-box-icon">💳</span>
+            <div>
+              <div class="webhook-box-name">Stripe</div>
+              <div class="webhook-box-events">charge.succeeded · charge.refunded</div>
+            </div>
+          </div>
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-stripe" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-stripe', this)">Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- META ADS -->
+      <div class="int-panel" id="intpanel-meta">
+        <div class="int-section-title">Meta Ads</div>
+        <div class="int-section-desc">Conecte sua conta de anúncios para ver gastos, CPA e ROAS em tempo real.</div>
+
+        <div class="int-status-row" id="metaStatusRow">
+          <div class="int-status-left">
+            <div class="int-platform-icon">📘</div>
+            <div>
+              <div class="int-platform-name">Meta for Business</div>
+              <div class="int-platform-sub" id="metaAccountSub">Não conectado</div>
+            </div>
+          </div>
+          <span class="badge-disconnected" id="metaConnBadge">Desconectado</span>
+        </div>
+
+        <div id="metaConnectSection">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+            Ao conectar, o UTMBalas irá ler os dados de gastos das suas campanhas a cada 30 minutos e cruzar com as vendas recebidas pelos webhooks.
+          </div>
+          <a href="/api/meta/auth" class="btn btn-primary" style="text-decoration:none;display:inline-block">
+            Conectar com Meta
+          </a>
+        </div>
+        <div id="metaDisconnectSection" style="display:none">
+          <button class="btn btn-danger" onclick="disconnectMeta()">Desconectar Meta</button>
+        </div>
+      </div>
+
+      <!-- CAKTO -->
+      <div class="int-panel" id="intpanel-cakto">
+        <div class="int-section-title">Cakto</div>
+        <div class="int-section-desc">Receba notificações de vendas, reembolsos e pendências em tempo real.</div>
+        <div class="int-status-row">
+          <div class="int-status-left">
+            <div class="int-platform-icon">🛒</div>
+            <div>
+              <div class="int-platform-name">Cakto</div>
+              <div class="int-platform-sub">Webhook via token</div>
+            </div>
+          </div>
+          <span class="badge-connected">Ativo</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          No painel da Cakto, vá em <strong style="color:var(--text)">Configurações → Webhooks</strong> e cole a URL abaixo:
+        </div>
+        <div class="webhook-box">
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-cakto2" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-cakto2', this)">Copiar URL</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Eventos suportados: <code style="background:var(--card2);padding:1px 5px;border-radius:3px">purchase.approved</code> <code style="background:var(--card2);padding:1px 5px;border-radius:3px">purchase.refunded</code> <code style="background:var(--card2);padding:1px 5px;border-radius:3px">purchase.pending</code></div>
+      </div>
+
+      <!-- WOOVI -->
+      <div class="int-panel" id="intpanel-woovi">
+        <div class="int-section-title">Woovi</div>
+        <div class="int-section-desc">Receba confirmações de pagamento Pix automaticamente.</div>
+        <div class="int-status-row">
+          <div class="int-status-left">
+            <div class="int-platform-icon">💸</div>
+            <div>
+              <div class="int-platform-name">Woovi / OpenPix</div>
+              <div class="int-platform-sub">Webhook via token</div>
+            </div>
+          </div>
+          <span class="badge-connected">Ativo</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          No painel da Woovi, vá em <strong style="color:var(--text)">API/Plugins → Webhooks</strong> e adicione a URL abaixo:
+        </div>
+        <div class="webhook-box">
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-woovi2" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-woovi2', this)">Copiar URL</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Evento suportado: <code style="background:var(--card2);padding:1px 5px;border-radius:3px">OPENPIX:CHARGE_COMPLETED</code></div>
+      </div>
+
+      <!-- STRIPE -->
+      <div class="int-panel" id="intpanel-stripe">
+        <div class="int-section-title">Stripe</div>
+        <div class="int-section-desc">Receba eventos de cobrança e reembolso do Stripe.</div>
+        <div class="int-status-row">
+          <div class="int-status-left">
+            <div class="int-platform-icon">💳</div>
+            <div>
+              <div class="int-platform-name">Stripe</div>
+              <div class="int-platform-sub">Webhook via token</div>
+            </div>
+          </div>
+          <span class="badge-connected">Ativo</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          No painel do Stripe, vá em <strong style="color:var(--text)">Developers → Webhooks → Add endpoint</strong> e cole a URL abaixo:
+        </div>
+        <div class="webhook-box">
+          <div class="webhook-url-row">
+            <input class="webhook-url-input" id="whurl-stripe2" readonly />
+            <button class="copy-btn" onclick="copyWebhook('whurl-stripe2', this)">Copiar URL</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Eventos suportados: <code style="background:var(--card2);padding:1px 5px;border-radius:3px">charge.succeeded</code> <code style="background:var(--card2);padding:1px 5px;border-radius:3px">charge.refunded</code></div>
+      </div>
+
+    </div><!-- /int-body -->
+  </div><!-- /int-layout -->
+</div><!-- /pageIntegracoes -->
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let currentPeriod = 'hoje';
+let charts = {};
+let lastMetrics = null;
+let lastCampaigns = null;
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+
+const fmt = (v, decimals = 2) => {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+const fmtNum = (v) => Number(v || 0).toLocaleString('pt-BR');
+const fmtPct = (v) => (isNaN(v) ? '—' : Number(v).toFixed(1) + '%');
+const fmtX = (v) => (isNaN(v) ? '—' : Number(v).toFixed(2) + 'x');
+const el = id => document.getElementById(id);
+
+// ─── Period ───────────────────────────────────────────────────────────────────
+
+function setPeriod(p) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+  fetchAll();
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const ids = ['visao-geral', 'por-horario', 'campanhas'];
+    t.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  el('tab-' + id).classList.add('active');
+  if (id === 'campanhas') fetchCampaigns();
+}
+
+// ─── Chart helpers ─────────────────────────────────────────────────────────────
+
+const COLORS = ['#6366f1','#22c55e','#3b82f6','#f59e0b','#a855f7','#ec4899','#14b8a6','#f97316'];
+
+function mkDonut(canvasId, labels, data) {
+  const ctx = el(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: COLORS, borderWidth: 2, borderColor: '#1a1d27' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#8892a4', font: { size: 12 }, padding: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)}` } }
+      },
+      cutout: '65%'
+    }
+  });
+}
+
+function mkBar(canvasId, labels, datasets) {
+  const ctx = el(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#8892a4', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#2a2d3e' } },
+        y: { ticks: { color: '#8892a4', font: { size: 11 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) }, grid: { color: '#2a2d3e' } }
+      }
+    }
+  });
+}
+
+function mkLine(canvasId, labels, datasets) {
+  const ctx = el(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#8892a4', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#2a2d3e' } },
+        y: { ticks: { color: '#8892a4', font: { size: 11 }, callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) }, grid: { color: '#2a2d3e' } }
+      },
+      elements: { line: { tension: 0.3 } }
+    }
+  });
+}
+
+// ─── KPI rendering ─────────────────────────────────────────────────────────────
+
+function renderKPIs(m) {
+  el('kFaturamento').textContent = fmt(m.faturamento);
+  el('kVendas').textContent = fmtNum(m.vendas) + ' vendas aprovadas';
+  el('kGasto').textContent = fmt(m.gasto);
+  el('kMetaStatus').textContent = m.meta_conectado ? 'Meta Ads conectado' : 'Meta não conectado';
+  el('kLucro').textContent = fmt(m.lucro);
+  el('kMargem').textContent = 'Margem: ' + fmtPct(m.margem);
+  el('kRoi').textContent = fmtX(m.roi);
+  el('kCpa').textContent = fmt(m.cpa);
+  el('kArpu').textContent = fmt(m.arpu);
+  el('kPendentes').textContent = fmt(m.pendentes);
+  el('kReembolsos').textContent = fmt(m.reembolsadas);
+
+  // Color adjustments
+  const lucroCard = el('kLucro').closest('.kpi-card');
+  lucroCard.className = 'kpi-card ' + (m.lucro >= 0 ? 'green' : 'red');
+
+  // Meta nav badge
+  const navInt = el('navIntegracoes');
+  if (navInt) navInt.title = m.meta_conectado ? 'Meta Ads conectado' : 'Meta Ads desconectado';
+}
+
+// ─── Donut: pagamentos ─────────────────────────────────────────────────────────
+
+function renderPagamentosDonut(porPagamento) {
+  if (!porPagamento || !porPagamento.length) return;
+  const labels = porPagamento.map(p => (p.payment_method || 'Desconhecido').toUpperCase());
+  const data = porPagamento.map(p => p.faturamento);
+  mkDonut('chartPagamento', labels, data);
+}
+
+// ─── Approval rings ────────────────────────────────────────────────────────────
+
+function renderRings(porPagamento) {
+  const grid = el('ringsGrid');
+  if (!porPagamento || !porPagamento.length) {
+    grid.innerHTML = '<div class="empty"><span class="empty-icon">📊</span><span>Sem dados</span></div>';
+    return;
+  }
+
+  const total = porPagamento.reduce((s, p) => s + (p.vendas || 0), 0);
+  const methods = porPagamento.slice(0, 6);
+
+  grid.innerHTML = methods.map((p, i) => {
+    const pct = total > 0 ? (p.vendas / total * 100) : 0;
+    const color = COLORS[i % COLORS.length];
+    const size = 70;
+    const r = 28;
+    const circ = 2 * Math.PI * r;
+    const dash = (pct / 100) * circ;
+    const name = (p.payment_method || 'N/A').toUpperCase().replace('_', ' ');
+    return `
+      <div class="ring-item">
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <circle cx="35" cy="35" r="${r}" fill="none" stroke="#2a2d3e" stroke-width="7"/>
+          <circle cx="35" cy="35" r="${r}" fill="none" stroke="${color}" stroke-width="7"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+            stroke-dashoffset="${(circ/4).toFixed(1)}"
+            stroke-linecap="round" transform="rotate(-90 35 35)"/>
+          <text x="35" y="39" text-anchor="middle" fill="${color}" font-size="12" font-weight="700">${pct.toFixed(0)}%</text>
+        </svg>
+        <div class="ring-label">${name}</div>
+        <div class="ring-pct" style="color:${color}">${fmtNum(p.vendas)} vendas</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Funnel ────────────────────────────────────────────────────────────────────
+
+function renderFunnel(campaigns) {
+  const funnel = el('funnelEl');
+  if (!campaigns || !campaigns.length) {
+    funnel.innerHTML = '<div class="empty"><span class="empty-icon">📉</span><span>Conecte o Meta Ads para ver o funil</span></div>';
+    return;
+  }
+
+  const totalImpressions = campaigns.reduce((s, c) => s + (c.impressions || 0), 0);
+  const totalClicks = campaigns.reduce((s, c) => s + (c.clicks || 0), 0);
+  const totalVendas = campaigns.reduce((s, c) => s + (c.vendas || 0), 0);
+
+  const steps = [
+    { name: 'Impressões', value: totalImpressions, color: '#6366f1', pct: 100 },
+    { name: 'Cliques', value: totalClicks, color: '#3b82f6', pct: totalImpressions > 0 ? (totalClicks / totalImpressions * 100) : 0 },
+    { name: 'Conversões', value: totalVendas, color: '#22c55e', pct: totalClicks > 0 ? (totalVendas / totalClicks * 100) : 0 },
+  ];
+
+  funnel.innerHTML = steps.map((s, i) => {
+    const width = 100 - i * 15;
+    const displayVal = i === 0 ? fmtNum(s.value) : i === 1 ? fmtNum(s.value) : fmtNum(s.value);
+    return `
+      <div class="funnel-step">
+        <div class="funnel-bar-bg">
+          <div class="funnel-bar-fill" style="width:${width}%;background:${s.color}">${displayVal}</div>
+        </div>
+        <div class="funnel-info">
+          <span class="funnel-name">${s.name}</span>
+          <span class="funnel-value" style="color:${s.color}">${i > 0 ? fmtPct(s.pct) + ' conversão' : ''}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Fonte (UTM) ──────────────────────────────────────────────────────────────
+
+function renderFonte(porFonte) {
+  const container = el('fonteList');
+  if (!porFonte || !porFonte.length) {
+    container.innerHTML = '<div class="empty"><span class="empty-icon">🎯</span><span>Sem dados UTM</span></div>';
+    return;
+  }
+  const max = Math.max(...porFonte.map(f => f.faturamento));
+  container.innerHTML = porFonte.map(f => {
+    const pct = max > 0 ? (f.faturamento / max * 100) : 0;
+    const nome = f.fonte || '(sem UTM)';
+    return `
+      <div class="progress-row">
+        <span class="progress-label" title="${nome}">${nome}</span>
+        <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct.toFixed(1)}%"></div></div>
+        <span class="progress-val">${fmt(f.faturamento)}</span>
+      </div>`;
+  }).join('');
+}
+
+// ─── Produto table ─────────────────────────────────────────────────────────────
+
+function renderProdutos(porProduto, totalFaturamento) {
+  const tbody = el('produtoBody');
+  if (!porProduto || !porProduto.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><span class="empty-icon">📦</span><span>Sem dados</span></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = porProduto.map(p => {
+    const nome = p.product_name || '(sem produto)';
+    const pct = totalFaturamento > 0 ? (p.faturamento / totalFaturamento * 100) : 0;
+    return `<tr>
+      <td>${nome}</td>
+      <td>${fmtNum(p.vendas)}</td>
+      <td>${fmt(p.faturamento)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar-wrap" style="width:80px"><div class="progress-bar" style="width:${pct.toFixed(1)}%"></div></div>
+          <span>${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Por hora ─────────────────────────────────────────────────────────────────
+
+function renderHora(porHora) {
+  const allHoras = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const mapaHora = {};
+  (porHora || []).forEach(h => { mapaHora[h.hora] = h; });
+
+  const receitas = allHoras.map(h => mapaHora[h]?.receita || 0);
+  const acumulado = [];
+  let acc = 0;
+  receitas.forEach(v => { acc += v; acumulado.push(acc); });
+
+  const labels = allHoras.map(h => `${h}h`);
+  const barColors = receitas.map(v => v >= 0 ? '#22c55e' : '#ef4444');
+
+  mkBar('chartHoraBar', labels, [{
+    label: 'Receita (R$)',
+    data: receitas,
+    backgroundColor: barColors,
+    borderRadius: 4
+  }]);
+
+  mkLine('chartHoraLine', labels, [{
+    label: 'Acumulado (R$)',
+    data: acumulado,
+    borderColor: '#6366f1',
+    backgroundColor: 'rgba(99,102,241,0.1)',
+    fill: true,
+    pointRadius: 2
+  }]);
+}
+
+// ─── Campanhas table ───────────────────────────────────────────────────────────
+
+function renderCampaigns(campaigns) {
+  const tbody = el('campBody');
+  if (!campaigns || !campaigns.length) {
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty"><span class="empty-icon">📣</span><span>Sem campanhas</span></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = campaigns.map((c, i) => {
+    const lucroClass = c.lucro >= 0 ? 'num-green' : 'num-red';
+    return `<tr>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" checked onchange="toggleCampaign(${i}, this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${c.campaign_name}">${c.campaign_name}</td>
+      <td>${fmtNum(c.vendas)}</td>
+      <td>${fmt(c.faturamento)}</td>
+      <td class="num-red">${fmt(c.gasto)}</td>
+      <td class="${lucroClass}">${fmt(c.lucro)}</td>
+      <td>${c.cpa > 0 ? fmt(c.cpa) : '<span class="num-muted">—</span>'}</td>
+      <td>${c.roas > 0 ? fmtX(c.roas) : '<span class="num-muted">—</span>'}</td>
+      <td>${c.cpc > 0 ? fmt(c.cpc) : '<span class="num-muted">—</span>'}</td>
+      <td>${c.cpm > 0 ? fmt(c.cpm) : '<span class="num-muted">—</span>'}</td>
+      <td>${fmtNum(c.clicks)}</td>
+      <td>${fmtNum(c.impressions)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleCampaign(idx, active) {
+  // UI only toggle — future: call API to pause/enable
+  const row = el('campBody').rows[idx];
+  if (row) row.style.opacity = active ? '1' : '0.4';
+}
+
+// ─── Fetch ─────────────────────────────────────────────────────────────────────
+
+async function fetchMetrics() {
+  const res = await fetch(`/api/metrics?period=${currentPeriod}`);
+  return res.json();
+}
+
+async function fetchCampaigns() {
+  el('campBody').innerHTML = '<tr><td colspan="12"><div class="empty"><span class="spinner"></span></div></td></tr>';
+  try {
+    const res = await fetch(`/api/campaigns?period=${currentPeriod}`);
+    const data = await res.json();
+    lastCampaigns = data;
+    renderCampaigns(data);
+    renderFunnel(data);
+  } catch (e) {
+    el('campBody').innerHTML = '<tr><td colspan="12"><div class="empty"><span>Erro ao carregar campanhas</span></div></td></tr>';
+  }
+}
+
+async function fetchAll() {
+  try {
+    const m = await fetchMetrics();
+    lastMetrics = m;
+    renderKPIs(m);
+    renderPagamentosDonut(m.por_pagamento);
+    renderRings(m.por_pagamento);
+    renderFonte(m.por_fonte);
+    renderProdutos(m.por_produto, m.faturamento);
+    renderHora(m.por_hora);
+    if (lastCampaigns !== null) renderFunnel(lastCampaigns);
+    el('lastUpdated').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+  } catch (e) {
+    console.error('Erro ao buscar métricas:', e);
+  }
+}
+
+// ─── Page navigation ──────────────────────────────────────────────────────────
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el('page' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  el('nav' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  el('refreshInfo').style.display = name === 'dashboard' ? '' : 'none';
+  if (name === 'integracoes') loadIntegracoes();
+}
+
+// ─── Integrations panel nav ────────────────────────────────────────────────────
+
+function showIntPanel(id) {
+  document.querySelectorAll('.int-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.int-sidebar-item').forEach(i => i.classList.remove('active'));
+  el('intpanel-' + id).classList.add('active');
+  el('isp-' + id).classList.add('active');
+}
+
+// ─── Load settings into integrations page ─────────────────────────────────────
+
+async function loadIntegracoes() {
+  try {
+    const res = await fetch('/api/settings');
+    const s = await res.json();
+
+    // Profile
+    if (s.profile_name) el('pf-name').value = s.profile_name;
+    if (s.profile_email) el('pf-email').value = s.profile_email;
+    if (s.profile_business) el('pf-business').value = s.profile_business;
+
+    const baseUrl = s.base_url || window.location.origin;
+    el('pf-baseurl').value = baseUrl;
+
+    // Token
+    const token = s.webhook_token || '';
+    el('wh-token').value = token;
+
+    // Webhook URLs
+    updateWebhookUrls(baseUrl, token);
+
+    // Meta status
+    const connected = s.meta_connected;
+    el('metaConnBadge').className = connected ? 'badge-connected' : 'badge-disconnected';
+    el('metaConnBadge').textContent = connected ? 'Conectado' : 'Desconectado';
+    el('metaAccountSub').textContent = connected
+      ? (s.meta_account_id ? `Conta: ${s.meta_account_id}` : 'Conta conectada')
+      : 'Não conectado';
+    el('metaConnectSection').style.display = connected ? 'none' : '';
+    el('metaDisconnectSection').style.display = connected ? '' : 'none';
+  } catch (e) {
+    console.error('Erro ao carregar integrações:', e);
+  }
+}
+
+function updateWebhookUrls(baseUrl, token) {
+  const base = (baseUrl || '').replace(/\/$/, '');
+  const t = token ? `?token=${token}` : '';
+  const urls = {
+    'whurl-cakto': `${base}/webhook/cakto${t}`,
+    'whurl-cakto2': `${base}/webhook/cakto${t}`,
+    'whurl-woovi': `${base}/webhook/woovi${t}`,
+    'whurl-woovi2': `${base}/webhook/woovi${t}`,
+    'whurl-stripe': `${base}/webhook/stripe${t}`,
+    'whurl-stripe2': `${base}/webhook/stripe${t}`,
+  };
+  for (const [id, url] of Object.entries(urls)) {
+    const inp = el(id);
+    if (inp) inp.value = url;
+  }
+}
+
+// ─── Save profile ──────────────────────────────────────────────────────────────
+
+async function saveProfile() {
+  const body = {
+    profile_name: el('pf-name').value,
+    profile_email: el('pf-email').value,
+    profile_business: el('pf-business').value,
+    base_url: el('pf-baseurl').value.replace(/\/$/, '')
+  };
+  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  showSaveMsg('saveProfileMsg');
+  updateWebhookUrls(body.base_url, el('wh-token').value);
+}
+
+// ─── Save webhook token ────────────────────────────────────────────────────────
+
+async function saveWebhookToken() {
+  const token = el('wh-token').value.trim();
+  await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ webhook_token: token }) });
+  showSaveMsg('saveTokenMsg');
+  updateWebhookUrls(el('pf-baseurl').value, token);
+}
+
+function generateToken() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const token = Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  el('wh-token').value = token;
+}
+
+// ─── Copy webhook URL ──────────────────────────────────────────────────────────
+
+function copyWebhook(inputId, btn) {
+  const val = el(inputId).value;
+  navigator.clipboard.writeText(val).then(() => {
+    btn.textContent = 'Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── Disconnect Meta ────────────────────────────────────────────────────────────
+
+async function disconnectMeta() {
+  if (!confirm('Desconectar o Meta Ads? Os dados de gasto do cache serão mantidos.')) return;
+  await fetch('/api/meta/disconnect', { method: 'DELETE' });
+  loadIntegracoes();
+}
+
+// ─── Show save message ──────────────────────────────────────────────────────────
+
+function showSaveMsg(id) {
+  const msg = el(id);
+  msg.style.display = 'inline';
+  setTimeout(() => { msg.style.display = 'none'; }, 2500);
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+
+showPage('dashboard');
+fetchAll();
+setInterval(fetchAll, 30000);
+</script>
+</body>
+</html>

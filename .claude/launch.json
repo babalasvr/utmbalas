@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ads-dashboard",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--experimental-sqlite", "server.js"],
+      "port": 3000
+    }
+  ]
+}
