@@ -13,6 +13,7 @@ export function middleware(request) {
     pathname.startsWith('/api/meta/callback') ||
     pathname.startsWith('/api/meta/auth') ||
     pathname.startsWith('/api/meta/select-account') ||
+    pathname.startsWith('/api/auth') ||
     pathname === '/login'
   ) {
     return NextResponse.next();
