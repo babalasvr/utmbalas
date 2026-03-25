@@ -17,17 +17,18 @@ export async function POST(request) {
 
   const body = await request.json();
   const event = body.event || '';
-  const allowed = ['purchase.approved', 'purchase.refunded', 'purchase.pending'];
+
+  const allowed = ['purchase_approved', 'purchase_refunded', 'purchase_pending'];
   if (!allowed.includes(event)) {
-    return NextResponse.json({ ok: true, skipped: true });
+    return NextResponse.json({ ok: true, skipped: true, event });
   }
 
-  const p = body.purchase || {};
-  const product = p.product || {};
+  const d = body.data || {};
+  const product = d.product || {};
 
   let status = 'approved';
-  if (event === 'purchase.refunded') status = 'refunded';
-  if (event === 'purchase.pending') status = 'pending';
+  if (event === 'purchase_refunded') status = 'refunded';
+  if (event === 'purchase_pending') status = 'pending';
 
   db.prepare(`
     INSERT INTO events (source, event_type, order_id, value, payment_method, product_name, utm_campaign, utm_medium, utm_content, status, created_at)
@@ -35,15 +36,15 @@ export async function POST(request) {
   `).run(
     'cakto',
     event,
-    p.id || null,
-    parseFloat(p.value) || 0,
-    p.payment_method || null,
+    d.id || d.refId || null,
+    parseFloat(d.amount) || parseFloat(d.baseAmount) || 0,
+    d.paymentMethod || d.payment_method || null,
     product.name || null,
-    p.utm_campaign || null,
-    p.utm_medium || null,
-    p.utm_content || null,
+    d.utm_campaign || null,
+    d.utm_medium || null,
+    d.utm_content || null,
     status,
-    p.created_at || new Date().toISOString()
+    d.createdAt || d.paidAt || new Date().toISOString()
   );
 
   return NextResponse.json({ ok: true });
