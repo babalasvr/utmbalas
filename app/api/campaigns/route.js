@@ -29,6 +29,12 @@ export async function GET(request) {
   const period = searchParams.get('period') || 'hoje';
   const dateFrom = getDateFilter(period);
 
+  // Label exato usado no cache do Meta (mesmo padrão do metrics/route.js)
+  const todayLabel = toSPDate(new Date());
+  const metaDateLabel = period === '7d'  ? `7d_${todayLabel}`
+                      : period === '30d' ? `30d_${todayLabel}`
+                      : todayLabel;
+
   const vendasPorCampanha = db.prepare(`
     SELECT utm_campaign, SUM(value) as faturamento, COUNT(*) as vendas
     FROM events
@@ -41,9 +47,9 @@ export async function GET(request) {
            SUM(clicks) as clicks, SUM(impressions) as impressions,
            AVG(cpc) as cpc, AVG(cpm) as cpm
     FROM meta_spend_cache
-    WHERE date >= ?
+    WHERE date = ?
     GROUP BY campaign_id
-  `).all(dateFrom);
+  `).all(metaDateLabel);
 
   const metaMap = {};
   for (const m of gastosMeta) {
