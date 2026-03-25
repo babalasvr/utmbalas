@@ -2,19 +2,26 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 const db = require('@/lib/db');
 
+const TZ = 'America/Sao_Paulo';
+
+function toSPDate(date) {
+  return date.toLocaleDateString('pt-BR', { timeZone: TZ })
+    .split('/').reverse().join('-');
+}
+
 function getDateFilter(period) {
   const now = new Date();
   if (period === '7d') {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
-    return d.toISOString().slice(0, 10);
+    return toSPDate(d);
   }
   if (period === '30d') {
     const d = new Date(now);
     d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
+    return toSPDate(d);
   }
-  return now.toISOString().slice(0, 10);
+  return toSPDate(now);
 }
 
 export async function GET(request) {

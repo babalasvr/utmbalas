@@ -3,19 +3,27 @@ import { NextResponse } from 'next/server';
 const db = require('@/lib/db');
 const { getMetaToken } = require('@/lib/meta');
 
+const TZ = 'America/Sao_Paulo';
+
+function toSPDate(date) {
+  // Retorna YYYY-MM-DD no fuso de São Paulo
+  return date.toLocaleDateString('pt-BR', { timeZone: TZ })
+    .split('/').reverse().join('-');
+}
+
 function getDateFilter(period) {
   const now = new Date();
   if (period === '7d') {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
-    return d.toISOString().slice(0, 10);
+    return toSPDate(d);
   }
   if (period === '30d') {
     const d = new Date(now);
     d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
+    return toSPDate(d);
   }
-  return now.toISOString().slice(0, 10);
+  return toSPDate(now);
 }
 
 export async function GET(request) {
@@ -64,9 +72,9 @@ export async function GET(request) {
   `).all(dateFrom);
 
   const porHora = db.prepare(`
-    SELECT strftime('%H', created_at) as hora, SUM(value) as receita, COUNT(*) as vendas
+    SELECT strftime('%H', datetime(created_at, '-3 hours')) as hora, SUM(value) as receita, COUNT(*) as vendas
     FROM events
-    WHERE status = 'approved' AND date(created_at) >= ?
+    WHERE status = 'approved' AND date(datetime(created_at, '-3 hours')) >= ?
     GROUP BY hora
     ORDER BY hora
   `).all(dateFrom);
